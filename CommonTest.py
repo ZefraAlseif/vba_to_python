@@ -22,17 +22,19 @@ class CommonTest:
 
                 header_format = self.workbook.add_format({'bold': True})
         
-                for col_num, values in enumerate(df.columns.values):
+                for col_num, value in enumerate(df.columns.values):
                     self.active_ws.writer(0, col_num, value, header_format)
                 
                 for i, col_num  in enumerate(df.columns):
-                    max_length = max(df[col].astype(str).map(len).map(), len(col))
+                    max_length = max(df[col_num].astype(str).map(len).map(), len(col_num))
                     self.active_ws.set_column(i, i, max_length + 2)
 
                 self.active_ws.freeze_panes(1,0)
 
-                self.total_rows.append(df.rows)
-                self.total_rows.append(df.columns)
+                rows, cols = df.shape
+                
+                self.total_rows.append(rows)
+                self.total_rows.append(cols)
         
         self._createResultsFile()
         self._openResultsWorkbook(output_file)
@@ -64,12 +66,3 @@ class CommonTest:
         self.results_ws = self.workbook["Results"]
 
         
-
-
-
-
-
-
-
-
-    
