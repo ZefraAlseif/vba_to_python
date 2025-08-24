@@ -60,9 +60,45 @@ class CommonTest:
 
         self.results_ws.freeze_panes(1,0)
 
-    def _openResultsWorkbook(self,output_file):
+    def _openResultsWorkbook(self, output_file):
         self.workbook   = openpyxl.load_workbook(output_file)
         self.active_ws  = self.workbook.active
         self.results_ws = self.workbook["Results"]
 
-        
+    def _activateWorsheet(self, csvSheet):
+        self.active_ws = self.workbook[f"AnalyzedData-{csvSheet}"]
+    
+    def getRowNumber(self, searchString, colNum, csvSheet):
+        self._activateWorsheet(csvSheet)
+        for rowObj in self.active_ws.iter_rows(min_col=colNum,max_col=colNum,values_only=True):
+            if rowObj[0] == searchString:
+                return rowObj[0].row
+
+    def findAllRows(self,searchString, colNum, csvSheet):   
+        allRows = []
+        self._activateWorsheet(csvSheet)
+        for rowObj in self.active_ws.iter_rows(min_col=colNum,max_col=colNum,values_only=True):
+            if rowObj[0] == searchString:
+                allRows.append(rowObj[0].row)
+        return allRows
+
+    def findRowsIntersect(self, searchStringDict, csvSheet):
+        intersection = []
+        allRows = []
+        for key, value in searchStringDict.items():
+            allRows = self.findAllRows(searchString=value, colNum=key, csvSheet=csvSheet)
+            if not intersection:
+                intersection = allRows
+            else:
+                intersection = list(set(allRows) & set(intersection))
+
+        return intersection
+
+    def findRowsUnion(self, searchStringDict, csvSheet):
+        union = []
+        for key, value in searchStringDict.items():
+            union = list(set(union) | set(self.findAllRows(searchString=value, 
+                                                           colNum=key, 
+                                                           csvSheet=csvSheet)))
+
+        return union
