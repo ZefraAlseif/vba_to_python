@@ -110,3 +110,13 @@ class CommonTest:
                                           csvSheet=csvSheet))
 
         return list(union)
+    
+    def expectedValuesCheck(self, expectedValue, actualValue):
+        pass
+
+    def addDataNameResults():
+        pass
+
+    def wrtieResults(self, titleStr, dataRow, expectedValue, 
+                     actualValue, colNum=None, cmmt=None):
+        pass
