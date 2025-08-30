@@ -6,9 +6,17 @@ class CommonTest:
     def __init__(self):
         self.total_rows = []
         self.total_cols = []
-        self.workbook = None
+        self.workbook   = None
         self.results_ws = None
-        self.active_ws = None
+        self.active_ws  = None
+        self.currentResultsRow = None
+        
+        self._rowCol    = 1
+        self._nameCol   = 2
+        self._expValCol = 3
+        self._operCol   = 4
+        self._actValCol = 5
+        self._checkCol  = 6
 
     def initializeTest(self, csv_files, output_file):
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
@@ -105,36 +113,60 @@ class CommonTest:
     def findRowsUnion(self, searchStringDict, csvSheet):
         union = set()
         for key, value in searchStringDict.items():
-            union |= set(self.findAllRows(searchString=value, 
-                                          colNum=key, 
-                                          csvSheet=csvSheet))
+            union = list(set(union) | set(self.findAllRows(searchString=value, 
+                                                           colNum=key, 
+                                                           csvSheet=csvSheet)))
 
         return list(union)
     
+    def _returnStrCoordRC(self):
+        actVal = f'RC[{self._actValCol - self._checkCol}]'
+        expVal = f'RC[{self._expValCol - self._checkCol}]'
+        return actVal, expVal
+    
+    def _commandEquals(self):
+        actVal, expVal = self._returnStrCoordRC()
+        return f"=IF({actVal} = {expVal}, {self._passVal}, {self._failVal})"
+
+    def _commandNotEquals(self):
+        actVal, expVal = self._returnStrCoordRC()
+        return f"=IF({actVal} = {expVal}, {self._passVal}, {self._failVal})"
+
+    def _commandWithtinTolerance(self, tol):
+        actVal, expVal = self._returnStrCoordRC()
+        check1 = f"{actVal} >= {expVal} + {tol}"
+        check2 = f"{actVal} <= {expVal} - {tol}"
+        formula = f"AND({check1}, {check2})"
+        return f"=IF({formula}, {self._passVal}, {self._failVal})"
+
+    def _commandOutsideTolerance(self, tol):
+        actVal, expVal = self._returnStrCoordRC()
+        check1 = f"{actVal} >= {expVal} + {tol}"
+        check2 = f"{actVal} <= {expVal} - {tol}"
+        formula = f"NOT(AND({check1}, {check2}))"
+        return f"=IF({formula}, {self._passVal}, {self._failVal})"
+
     def expectedValuesCheck(self, expectedValue, actualValue):
         stringSplit = expectedValue.trim().split(",", 1)
         commandStr = stringSplit[0]
 
         if commandStr in ("EQ","SEQ"):
-            self._commandEquals(expVal=stringSplit(1), 
-                                actVal=actualValue)
+            self._commandEquals()
         elif commandStr in ("NE","SNE"):
-            self._commandNotEquals(expVal=stringSplit(1), 
-                                   actVal=actualValue)
+            self._commandNotEquals()
         elif commandStr in ("TL"):
             lastComma = stringSplit[1].rfind(",")
-            self._commandWithtinTolerance(expVal=stringSplit[1][:lastComma],
-                                          actVal=actualValue,
-                                          tol=stringSplit[1][lastComma+1:])
+            self._commandWithtinTolerance(tol=stringSplit[1][lastComma+1:])
         elif commandStr in ("NTL"):
             lastComma = stringSplit[1].rfind(",")
-            self._commandOutsideTolerance(expVal=stringSplit[1][:lastComma],
-                                          actVal=actualValue,
-                                          tol=stringSplit[1][lastComma+1:])
+            self._commandOutsideTolerance(tol=stringSplit[1][lastComma+1:])
         else:
             # unsuported command
             pass
 
+    def _increaseResultsRow(self):   
+        self.currentResultsRow += 1
+    
     def addDataNameResults(self, titleStr, dataRow, colNum, cmmt):
         pass
 
@@ -148,4 +180,5 @@ class CommonTest:
         
         self.expectedValuesCheck(expectedValue=expectedValue,
                                  actualValue=actualValue)
-    
+
+        self._increaseResultsRow()
