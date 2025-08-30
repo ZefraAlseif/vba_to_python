@@ -112,11 +112,40 @@ class CommonTest:
         return list(union)
     
     def expectedValuesCheck(self, expectedValue, actualValue):
-        pass
+        stringSplit = expectedValue.trim().split(",", 1)
+        commandStr = stringSplit[0]
 
-    def addDataNameResults():
+        if commandStr in ("EQ","SEQ"):
+            self._commandEquals(expVal=stringSplit(1), 
+                                actVal=actualValue)
+        elif commandStr in ("NE","SNE"):
+            self._commandNotEquals(expVal=stringSplit(1), 
+                                   actVal=actualValue)
+        elif commandStr in ("TL"):
+            lastComma = stringSplit[1].rfind(",")
+            self._commandWithtinTolerance(expVal=stringSplit[1][:lastComma],
+                                          actVal=actualValue,
+                                          tol=stringSplit[1][lastComma+1:])
+        elif commandStr in ("NTL"):
+            lastComma = stringSplit[1].rfind(",")
+            self._commandOutsideTolerance(expVal=stringSplit[1][:lastComma],
+                                          actVal=actualValue,
+                                          tol=stringSplit[1][lastComma+1:])
+        else:
+            # unsuported command
+            pass
+
+    def addDataNameResults(self, titleStr, dataRow, colNum, cmmt):
         pass
 
     def wrtieResults(self, titleStr, dataRow, expectedValue, 
                      actualValue, colNum=None, cmmt=None):
-        pass
+        
+        self.addDataNameResults(titleStr=titleStr, 
+                                dataRow=dataRow, 
+                                colNum=colNum, 
+                                cmmt=cmmt)
+        
+        self.expectedValuesCheck(expectedValue=expectedValue,
+                                 actualValue=actualValue)
+    
