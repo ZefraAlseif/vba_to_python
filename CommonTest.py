@@ -18,6 +18,20 @@ class CommonTest:
         self._actValCol = 5
         self._checkCol  = 6
 
+        self._passVal = "PASS"
+        self._failVal = "FAIL"
+
+        self._basicOperations = {
+            "EQ" : "=,Equals",
+            "SEQ": "=,Equals",
+            "NE" : "<>,Not Equals",
+            "NEQ": "<>,Not Equals",
+            "GE" : ">=,Greater Than or Equals",
+            "GT" : ">,Greater Than",
+            "LE" : "<=,Less Than or Equals",
+            "LT" : "<,Less Than"
+        }   
+
     def initializeTest(self, csv_files, output_file):
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
             self.workbook = writer.book
@@ -113,9 +127,9 @@ class CommonTest:
     def findRowsUnion(self, searchStringDict, csvSheet):
         union = set()
         for key, value in searchStringDict.items():
-            union = list(set(union) | set(self.findAllRows(searchString=value, 
-                                                           colNum=key, 
-                                                           csvSheet=csvSheet)))
+            union |= set(self.findAllRows(searchString=value,
+                                          colNum=key, 
+                                          csvSheet=csvSheet))
 
         return list(union)
     
@@ -124,42 +138,32 @@ class CommonTest:
         expVal = f'RC[{self._expValCol - self._checkCol}]'
         return actVal, expVal
     
-    def _commandEquals(self):
+    def _basicFormula(self, operator):
         actVal, expVal = self._returnStrCoordRC()
-        return f"=IF({actVal} = {expVal}, {self._passVal}, {self._failVal})"
+        return f"=IF({actVal} {operator} {expVal}, {self._passVal}, {self._failVal})"
 
-    def _commandNotEquals(self):
+    def _commandTolerance(self, tol, cmmd):
         actVal, expVal = self._returnStrCoordRC()
-        return f"=IF({actVal} = {expVal}, {self._passVal}, {self._failVal})"
-
-    def _commandWithtinTolerance(self, tol):
-        actVal, expVal = self._returnStrCoordRC()
-        check1 = f"{actVal} >= {expVal} + {tol}"
-        check2 = f"{actVal} <= {expVal} - {tol}"
+        check1 = f"{actVal} <= {expVal} + {tol}"
+        check2 = f"{actVal} => {expVal} - {tol}"
         formula = f"AND({check1}, {check2})"
-        return f"=IF({formula}, {self._passVal}, {self._failVal})"
+        
+        if cmmd in ("NTL"):
+            formula = f"NOT({formula})"
 
-    def _commandOutsideTolerance(self, tol):
-        actVal, expVal = self._returnStrCoordRC()
-        check1 = f"{actVal} >= {expVal} + {tol}"
-        check2 = f"{actVal} <= {expVal} - {tol}"
-        formula = f"NOT(AND({check1}, {check2}))"
         return f"=IF({formula}, {self._passVal}, {self._failVal})"
 
     def expectedValuesCheck(self, expectedValue, actualValue):
         stringSplit = expectedValue.trim().split(",", 1)
         commandStr = stringSplit[0]
 
-        if commandStr in ("EQ","SEQ"):
-            self._commandEquals()
-        elif commandStr in ("NE","SNE"):
-            self._commandNotEquals()
-        elif commandStr in ("TL"):
+        if commandStr in self._basicOperations:
+            operationArr = self._basicOperations[commandStr].split(",")
+            val = self._basicFormula(operator=operationArr[0])
+        elif commandStr in ("TL","NTL"):
             lastComma = stringSplit[1].rfind(",")
-            self._commandWithtinTolerance(tol=stringSplit[1][lastComma+1:])
-        elif commandStr in ("NTL"):
-            lastComma = stringSplit[1].rfind(",")
-            self._commandOutsideTolerance(tol=stringSplit[1][lastComma+1:])
+            tolerance = stringSplit[1][lastComma+1:]
+            val = self._commandWithtinTolerance(tol=tolerance, cmmd=commandStr)
         else:
             # unsuported command
             pass
@@ -182,3 +186,4 @@ class CommonTest:
                                  actualValue=actualValue)
 
         self._increaseResultsRow()
+        
