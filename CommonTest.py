@@ -10,18 +10,16 @@ class CommonTest:
         self.results_ws = None
         self.active_ws = None
 
-    def addCsvFiles(self, csv_files, output_file):
+    def initializeTest(self, csv_files, output_file):
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
+            self.workbook = writer.book
+            header_format = self.workbook.add_format({'bold': True})
             for index, csv_file in enumerate(csv_files):
                 sheet_name = f"AnalyzedData-{index}"
                 df = pd.read_csv(csv_file)
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-    
-                self.workbook = writer.book
+                df.to_excel(writer, sheet_name=sheet_name, index=False)   
                 self.active_ws = writer.sheets[sheet_name]
 
-                header_format = self.workbook.add_format({'bold': True})
-        
                 for col_num, value in enumerate(df.columns.values):
                     self.active_ws.writer(0, col_num, value, header_format)
                 
@@ -30,15 +28,17 @@ class CommonTest:
                     self.active_ws.set_column(i, i, max_length + 2)
 
                 self.active_ws.freeze_panes(1,0)
-
                 rows, cols = df.shape
                 
                 self.total_rows.append(rows)
-                self.total_rows.append(cols)
+                self.total_cols.append(cols)
         
         self._createResultsFile()
-        self._openResultsWorkbook(output_file)
         self.workbook.close()
+        self._openResultsWorkbook(output_file)
+
+    def endTest(self, output_file):
+        self.workbook.save(output_file) 
 
     def _createResultsFile(self):
         self.results_ws = self.workbook.add("Results")
