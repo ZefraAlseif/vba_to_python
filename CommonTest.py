@@ -1,36 +1,53 @@
 import openpyxl
 import pandas as pd
-import glob
+from enum import IntEnum, Enum
+
+class _Column(IntEnum):
+    ROW     = 1
+    NAME    = 2
+    EXP_VAL = 3
+    OPER    = 4
+    ACT_VAL = 5
+    CHECK   = 6
+
+class _Result(Enum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+
+class _Operation(Enum):
+    EQ  = ("=", "Equals")
+    SEQ = ("=", "Equals")
+    NE  = ("<>", "Not Equals")
+    NEQ = ("<>", "Not Equals")
+    GE  = (">=", "Greater Than or Equals")
+    GT  = (">", "Greater Than")
+    LE  = ("<=", "Less Than or Equals")
+    LT  = ("<", "Less Than")
 
 class CommonTest:
     def __init__(self):
-        self.total_rows = []
-        self.total_cols = []
+        # Workbook / worksheet state
         self.workbook   = None
         self.results_ws = None
         self.active_ws  = None
         self.currentResultsRow = None
-        
-        self._rowCol    = 1
-        self._nameCol   = 2
-        self._expValCol = 3
-        self._operCol   = 4
-        self._actValCol = 5
-        self._checkCol  = 6
+        self.total_rows = []
+        self.total_cols = []
 
-        self._passVal = "PASS"
-        self._failVal = "FAIL"
+        # Default row/column start (optional)
+        self._rowCol    = _Column.ROW
+        self._nameCol   = _Column.NAME
+        self._expValCol = _Column.EXP_VAL
+        self._operCol   = _Column.OPER
+        self._actValCol = _Column.ACT_VAL
+        self._checkCol  = _Column.CHECK
 
-        self._basicOperations = {
-            "EQ" : "=,Equals",
-            "SEQ": "=,Equals",
-            "NE" : "<>,Not Equals",
-            "NEQ": "<>,Not Equals",
-            "GE" : ">=,Greater Than or Equals",
-            "GT" : ">,Greater Than",
-            "LE" : "<=,Less Than or Equals",
-            "LT" : "<,Less Than"
-        }   
+        # Default result values
+        self._passVal = _Result.PASS
+        self._failVal = _Result.FAIL
+
+        # _Operations dictionary for quick lookup
+        self._basicOperations = {op.name: op.value for op in _Operation}   
 
     def initializeTest(self, csv_files, output_file):
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
@@ -64,9 +81,9 @@ class CommonTest:
 
     def _createResultsFile(self):
         self.results_ws = self.workbook.add("Results")
-        self._formatResultsWorsheet()
+        self._formatResultsWorksheet()
 
-    def _formatResultsWorsheet(self):
+    def _formatResultsWorksheet(self):
         header_format = self.workbook.add_format({
             "bold": True,
             "align": "center",
@@ -74,7 +91,7 @@ class CommonTest:
             "border": 1
         })
 
-        headers = ["Row_Index","Name","Actual Value",
+        headers = ["Row Index","Name","Actual Value",
                     "Operation","Expected Value"]
 
         for col_num, header in enumerate(headers):
@@ -158,8 +175,8 @@ class CommonTest:
         commandStr = stringSplit[0]
 
         if commandStr in self._basicOperations:
-            operationArr = self._basicOperations[commandStr].split(",")
-            val = self._basicFormula(operator=operationArr[0])
+            symbol, description = self._basicOperations[commandStr]
+            val = self._basicFormula(operator=symbol)
         elif commandStr in ("TL","NTL"):
             lastComma = stringSplit[1].rfind(",")
             tolerance = stringSplit[1][lastComma+1:]
@@ -174,7 +191,7 @@ class CommonTest:
     def addDataNameResults(self, titleStr, dataRow, colNum, cmmt):
         pass
 
-    def wrtieResults(self, titleStr, dataRow, expectedValue, 
+    def writeResults(self, titleStr, dataRow, expectedValue, 
                      actualValue, colNum=None, cmmt=None):
         
         self.addDataNameResults(titleStr=titleStr, 
