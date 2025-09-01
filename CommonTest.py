@@ -65,40 +65,48 @@ class CommonTest:
         self.active_ws  = self.workbook.active
         self.results_ws = self.workbook["Results"]
 
-    def _activateWorsheet(self, csvSheet):
+    def _activateWorksheet(self, csvSheet):
         self.active_ws = self.workbook[f"AnalyzedData-{csvSheet}"]
     
     def getRowNumber(self, searchString, colNum, csvSheet):
-        self._activateWorsheet(csvSheet)
-        for rowObj in self.active_ws.iter_rows(min_col=colNum,max_col=colNum,values_only=True):
-            if rowObj[0] == searchString:
-                return rowObj[0].row
+        self._activateWorksheet(csvSheet)
+        iterator = self.active_ws.iter_rows(min_col=colNum, 
+                                            max_col=colNum,
+                                            values_only=True)
+        
+        for rowNum, rowVal in enumerate(iterator, start=self.active_ws.min_row):
+            if rowVal[0] == searchString:
+                return rowNum
 
-    def findAllRows(self,searchString, colNum, csvSheet):   
+    def findAllRows(self, searchString, colNum, csvSheet):   
         allRows = []
-        self._activateWorsheet(csvSheet)
-        for rowObj in self.active_ws.iter_rows(min_col=colNum,max_col=colNum,values_only=True):
-            if rowObj[0] == searchString:
-                allRows.append(rowObj[0].row)
+        self._activateWorksheet(csvSheet)
+        iterator = self.active_ws.iter_rows(min_col=colNum, 
+                                            max_col=colNum,
+                                            values_only=True)
+        
+        for rowNum, rowVal in enumerate(iterator, start=self.active_ws.min_row):
+            if rowVal[0] == searchString:
+                allRows.append(rowNum)
+        
         return allRows
 
     def findRowsIntersect(self, searchStringDict, csvSheet):
-        intersection = []
-        allRows = []
+        intersection = None
         for key, value in searchStringDict.items():
-            allRows = self.findAllRows(searchString=value, colNum=key, csvSheet=csvSheet)
-            if not intersection:
-                intersection = allRows
-            else:
-                intersection = list(set(allRows) & set(intersection))
+            allRows = set(self.findAllRows(searchString=value, 
+                                           colNum=key, 
+                                           csvSheet=csvSheet))
+            
+            intersection =  allRows if intersection is None else (intersection & allRows)
 
-        return intersection
+        return list(intersection)
 
     def findRowsUnion(self, searchStringDict, csvSheet):
-        union = []
+        union = set()
         for key, value in searchStringDict.items():
-            union = list(set(union) | set(self.findAllRows(searchString=value, 
-                                                           colNum=key, 
-                                                           csvSheet=csvSheet)))
+            union |= set(self.findAllRows(searchString=value, 
+                                          colNum=key, 
+                                          csvSheet=csvSheet))
 
-        return union
+        return list(union)
