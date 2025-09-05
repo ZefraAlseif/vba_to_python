@@ -24,6 +24,12 @@ class _Operation(Enum):
     LE  = ("<=", "Less Than or Equals")
     LT  = ("<", "Less Than")
 
+class _CellFormat(Enum):
+    REDFONT = openpyxl.styles.Font(color="0000FF", bold=True)
+    ORANGEFILL = openpyxl.styles.PatternFill(start_color="FFA500", 
+                                              end_color="FFA500",
+                                              ill_type="solid")
+
 class CommonTest:
     def __init__(self):
         # Workbook / worksheet state
@@ -47,7 +53,11 @@ class CommonTest:
         self._failVal = _Result.FAIL
 
         # _Operations dictionary for quick lookup
-        self._basicOperations = {op.name: op.value for op in _Operation}   
+        self._basicOperations = {op.name: op.value for op in _Operation}
+
+        # Color Formats
+        self._redFont = _CellFormat.REDFONT
+        self._orangeFill = _CellFormat.ORANGEFILL   
 
     def initializeTest(self, csv_files, output_file):
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
@@ -187,9 +197,16 @@ class CommonTest:
 
     def _increaseResultsRow(self):   
         self.currentResultsRow += 1
-    
+
+    def setCellValue(self, row, col, value, csvSheet=1):
+        self._activateWorksheet(csvSheet=csvSheet)
+        self.active_ws(row=row, column=col, value=value).font = self._redFont
+
+    def _setResultCellValue(self, row, col, value):
+        self.results_ws(row=self.currentResultsRow, column=col, value=value)
+
     def addDataNameResults(self, titleStr, dataRow, colNum, cmmt):
-        pass
+        self._setResultCellValue(row=dataRow, col=colNum, value=titleStr)
 
     def writeResults(self, titleStr, dataRow, expectedValue, 
                      actualValue, colNum=None, cmmt=None):
