@@ -15,20 +15,30 @@ class _Result(Enum):
     FAIL = "FAIL"
 
 class _Operation(Enum):
-    EQ  = ("=", "Equals")
-    SEQ = ("=", "Equals")
-    NE  = ("<>", "Not Equals")
-    NEQ = ("<>", "Not Equals")
-    GE  = (">=", "Greater Than or Equals")
-    GT  = (">", "Greater Than")
-    LE  = ("<=", "Less Than or Equals")
-    LT  = ("<", "Less Than")
+    EQ   = ("="  , "Equals")
+    SEQ  = ("="  , "Equals")
+    NE   = ("<>" , "Not Equals")
+    NEQ  = ("<>" , "Not Equals")
+    GE   = (">=" , "Greater Than or Equals")
+    GT   = (">"  , "Greater Than")
+    LE   = ("<=" , "Less Than or Equals")
+    LT   = ("<"  , "Less Than")
+    TL   = ("+/-", "Within")
+    NTL  = ("+/-", "Not Within")
 
 class _CellFormat(Enum):
-    REDFONT = openpyxl.styles.Font(color="0000FF", bold=True)
-    ORANGEFILL = openpyxl.styles.PatternFill(start_color="FFA500", 
-                                              end_color="FFA500",
-                                              ill_type="solid")
+    REDFONT = openpyxl.styles.Font(
+        color="0000FF", 
+        bold=True)
+    
+    ORANGEFILL = openpyxl.styles.PatternFill(
+        start_color="FFA500", 
+        end_color="FFA500",
+        ill_type="solid")
+    
+    HYPERLINK = openpyxl.styles.Font(
+        color="0000FF", 
+        underline="single")
 
 class CommonTest:
     def __init__(self):
@@ -57,7 +67,8 @@ class CommonTest:
 
         # Color Formats
         self._redFont = _CellFormat.REDFONT
-        self._orangeFill = _CellFormat.ORANGEFILL   
+        self._orangeFill = _CellFormat.ORANGEFILL
+        self._hyperLinkFont = _CellFormat.HYPERLINK   
 
     def initializeTest(self, csv_files, output_file):
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
@@ -181,19 +192,40 @@ class CommonTest:
         return f"=IF({formula}, {self._passVal}, {self._failVal})"
 
     def expectedValuesCheck(self, expectedValue, actualValue):
+        expVal = None
         stringSplit = expectedValue.trim().split(",", 1)
         commandStr = stringSplit[0]
-
-        if commandStr in self._basicOperations:
-            symbol, description = self._basicOperations[commandStr]
-            val = self._basicFormula(operator=symbol)
-        elif commandStr in ("TL","NTL"):
-            lastComma = stringSplit[1].rfind(",")
-            tolerance = stringSplit[1][lastComma+1:]
+        symbol, description = self._basicOperations.get(commandStr,
+                                                        (None, None))
+        if commandStr in ("TL","NTL"):
+            parts = stringSplit[1].rsplit(",", 1)
+            expVal, tolerance = parts[0], parts[1]
             val = self._commandWithtinTolerance(tol=tolerance, cmmd=commandStr)
+            description = f"{description} {symbol} {tolerance}"
+        
+        elif commandStr in self._basicOperations:
+            val = self._basicFormula(operator=symbol)
+            expVal = stringSplit[1]
+        
         else:
-            # unsuported command
-            pass
+            val = None
+        
+        # Writing Information to Results Worksheet
+        self._setResultCellValue(value=expVal,
+                                 resultRow=self.currentResultsRow,
+                                 resultCol=self._expValCol)
+        
+        self._setResultCellValue(value=actualValue,
+                                 resultRow=self.currentResultsRow,
+                                 resultCol=self._actValCol)
+        
+        self._setResultCellValue(value=description,
+                                 resultRow=self.currentResultsRow,
+                                 resultCol=self._operCol)
+        
+        self._setResultCellValue(value=val,
+                                 resultRow=self.currentResultsRow,
+                                 resultCol=self._checkCol)
 
     def _increaseResultsRow(self):   
         self.currentResultsRow += 1
@@ -202,18 +234,48 @@ class CommonTest:
         self._activateWorksheet(csvSheet=csvSheet)
         self.active_ws(row=row, column=col, value=value).font = self._redFont
 
-    def _setResultCellValue(self, row, col, value):
-        self.results_ws(row=self.currentResultsRow, column=col, value=value)
+    def _setCellHyperlink(self, dataRow, dataCol, resultRow, resultCol, csvSheet):
+        cell = self.results_ws(row=resultRow, column=resultCol)
+        cell.hyperlink = f"#AnalyzedData-{csvSheet}!R{dataRow}C{dataCol}"
+        cell.font = self._hyperLinkFont
+    
+    def _setResultCellValue(self, value, resultRow, resultCol):
+        self.results_ws(row=resultRow, column=resultCol, value=value)
 
-    def addDataNameResults(self, titleStr, dataRow, colNum, cmmt):
-        self._setResultCellValue(row=dataRow, col=colNum, value=titleStr)
+    def _setCellComment(self, value, resultRow, resultCol):
+        self.results_ws(row=resultRow, column=resultCol).comment = value
 
+    def addDataNameResults(self, titleStr, dataRow, dataCol, cmmt, csvSheet):
+        self._setResultCellValue(value=titleStr,
+                                       resultRow=self.currentResultsRow, 
+                                       resultCol=self._nameCol)
+        
+        self._setResultCellValue(value=dataRow,
+                                       resultRow=self.currentResultsRow, 
+                                       resultCol=self._rowCol)
+
+        self._setCellHyperlink(dataRow=dataRow, 
+                               dataCol=1, 
+                               resultRow=self.currentResultsRow, 
+                               resultCol=self._rowCol, 
+                               csvSheet=csvSheet)
+        
+        if dataCol > 0:
+            self._setCellHyperlink(dataRow=dataRow, 
+                                    dataCol=dataCol, 
+                                    resultRow=self.currentResultsRow, 
+                                    resultCol=self._actValCol, 
+                                    csvSheet=csvSheet)
+        
+        if not cmmt is None:
+            self._setCellComment(value=openpyxl.comments.Comment(cmmt))
+            
     def writeResults(self, titleStr, dataRow, expectedValue, 
-                     actualValue, colNum=None, cmmt=None):
+                     actualValue, dataCol=0, cmmt=None, csvSheet=1):
         
         self.addDataNameResults(titleStr=titleStr, 
                                 dataRow=dataRow, 
-                                colNum=colNum, 
+                                dataCol=dataCol, 
                                 cmmt=cmmt)
         
         self.expectedValuesCheck(expectedValue=expectedValue,
