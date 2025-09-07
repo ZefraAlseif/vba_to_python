@@ -1,6 +1,7 @@
 import unittest
 import importlib.util
 import sys
+import pandas as pd
 from pathlib import Path
 
 
@@ -50,7 +51,38 @@ class TestInitialize(unittest.TestCase):
         )
 
         self.assertEqual(Path(self.file_dir + self.output_file).exists(), True)
+        self.assertEqual(len(self.cls.workbook.sheetnames), 2)
+        self.assertEqual("Results" in self.cls.workbook.sheetnames, True)
+        self.assertEqual(f"AnalyzedData-{1}" in self.cls.workbook.sheetnames, True)
 
+    def test_createFileMultCSVs(self):
+        self.cls.initializeTest(
+            csv_files=list(map(lambda x: self.file_dir + x, self.csv_files)),
+            output_file=self.file_dir + self.output_file
+        )
+
+        self.assertEqual(Path(self.file_dir + self.output_file).exists(), True)
+        self.assertEqual(len(self.cls.workbook.sheetnames), 11)
+        self.assertEqual("Results" in self.cls.workbook.sheetnames, True)
+        
+        for i in range(len(self.csv_files)):
+            self.assertEqual(f"AnalyzedData-{i+1}" in self.cls.workbook.sheetnames, True)
+
+    def test_data(self):
+        csvTest = list(map(lambda x: self.file_dir + x, self.csv_files))
+        self.cls.initializeTest(
+            csv_files=csvTest,
+            output_file=self.file_dir + self.output_file
+        )
+
+        for index, paths in enumerate(csvTest):
+            df_csv = pd.read_csv(paths, dtype=str)
+            df_xlsx = pd.read_excel(self.file_dir + self.output_file,
+                                   sheet_name=f"AnalyzedData-{index+1}",
+                                   dtype=str)
+            
+            self.assertEqual(df_csv.equals(df_xlsx), True)
+        
 class TestEnd(unittest.TestCase):
     pass
 

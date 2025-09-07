@@ -75,8 +75,8 @@ class CommonTest:
             self.workbook = writer.book
             header_format = self.workbook.add_format({'bold': True})
             for index, csv_file in enumerate(csv_files):
-                sheet_name = f"AnalyzedData-{index}"
-                df = pd.read_csv(csv_file)
+                sheet_name = f"AnalyzedData-{index+1}"
+                df = pd.read_csv(csv_file, dtype=str)
                 df.to_excel(writer, sheet_name=sheet_name, index=False)   
                 self.active_ws = writer.sheets[sheet_name]
 
