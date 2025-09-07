@@ -34,7 +34,7 @@ class _CellFormat(Enum):
     ORANGEFILL = openpyxl.styles.PatternFill(
         start_color="FFA500", 
         end_color="FFA500",
-        ill_type="solid")
+        fill_type="solid")
     
     HYPERLINK = openpyxl.styles.Font(
         color="0000FF", 
@@ -81,10 +81,11 @@ class CommonTest:
                 self.active_ws = writer.sheets[sheet_name]
 
                 for col_num, value in enumerate(df.columns.values):
-                    self.active_ws.writer(0, col_num, value, header_format)
+                    self.active_ws.write(0, col_num, value, header_format)
                 
                 for i, col_num  in enumerate(df.columns):
-                    max_length = max(df[col_num].astype(str).map(len).map(), len(col_num))
+                    max_length = max(df[col_num].astype(str).str.len().max(), len(col_num))
+
                     self.active_ws.set_column(i, i, max_length + 2)
 
                 self.active_ws.freeze_panes(1,0)
@@ -93,15 +94,14 @@ class CommonTest:
                 self.total_rows.append(rows)
                 self.total_cols.append(cols)
         
-        self._createResultsFile()
-        self.workbook.close()
+            self._createResultsFile()
         self._openResultsWorkbook(output_file)
 
     def endTest(self, output_file):
         self.workbook.save(output_file) 
 
     def _createResultsFile(self):
-        self.results_ws = self.workbook.add("Results")
+        self.results_ws = self.workbook.add_worksheet("Results")
         self._formatResultsWorksheet()
 
     def _formatResultsWorksheet(self):
@@ -123,7 +123,7 @@ class CommonTest:
     def _openResultsWorkbook(self, output_file):
         self.workbook   = openpyxl.load_workbook(output_file)
         self.active_ws  = self.workbook.active
-        self.results_ws = self.workbook["Results"]
+        self.results_ws = self.workbook['Results']       
 
     def _activateWorksheet(self, csvSheet):
         self.active_ws = self.workbook[f"AnalyzedData-{csvSheet}"]
