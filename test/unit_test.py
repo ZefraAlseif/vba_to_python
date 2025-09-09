@@ -37,7 +37,7 @@ class TestInitialize(unittest.TestCase):
         ]
         self.output_file = "/../results/realistic_data.xlsx"
         CommonTest = load_class_from_file(file_path="../src/CommonTest.py",
-                                        class_name="CommonTest")
+                                          class_name="CommonTest")
         self.cls = CommonTest()
     
     def tearDown(self):
@@ -68,7 +68,7 @@ class TestInitialize(unittest.TestCase):
         for i in range(len(self.csv_files)):
             self.assertEqual(f"AnalyzedData-{i+1}" in self.cls.workbook.sheetnames, True)
 
-    def test_data(self):
+    def test_dataImport(self):
         csvTest = list(map(lambda x: self.file_dir + x, self.csv_files))
         self.cls.initializeTest(
             csv_files=csvTest,
@@ -84,7 +84,41 @@ class TestInitialize(unittest.TestCase):
             self.assertEqual(df_csv.equals(df_xlsx), True)
         
 class TestEnd(unittest.TestCase):
-    pass
+    def setUp(self):
+        self.file_dir = str(Path(__file__).resolve().parent)
+        self.csv_files = [
+            "/../csv_data/realistic_data_1.csv",
+            "/../csv_data/realistic_data_2.csv",
+            "/../csv_data/realistic_data_3.csv",
+            "/../csv_data/realistic_data_4.csv",
+            "/../csv_data/realistic_data_5.csv",
+            "/../csv_data/realistic_data_6.csv",
+            "/../csv_data/realistic_data_7.csv",
+            "/../csv_data/realistic_data_8.csv",
+            "/../csv_data/realistic_data_9.csv",
+            "/../csv_data/realistic_data_10.csv"
+        ]
+        self.output_file = "/../results/realistic_data.xlsx"
+        CommonTest = load_class_from_file(file_path="../src/CommonTest.py",
+                                          class_name="CommonTest")
+        self.cls = CommonTest()
+    
+    def tearDown(self):
+        if Path(self.file_dir + self.output_file).exists():
+            Path(self.file_dir + self.output_file).unlink()
+
+    def test_saveFile(self):
+        self.cls.initializeTest(
+            csv_files=[self.file_dir + self.csv_files[0]],
+            output_file=self.file_dir + self.output_file
+        )
+
+        if Path(self.file_dir + self.output_file).exists():
+            Path(self.file_dir + self.output_file).unlink()
+
+        self.assertEqual(Path(self.file_dir + self.output_file).exists(), False)
+        self.cls.endTest(self.file_dir + self.output_file)
+        self.assertEqual(Path(self.file_dir + self.output_file).exists(), True)
 
 class TestGetRowNumber(unittest.TestCase):
     pass
