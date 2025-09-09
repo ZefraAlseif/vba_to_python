@@ -128,17 +128,29 @@ class CommonTest:
     def _activateWorksheet(self, csvSheet):
         self.active_ws = self.workbook[f"AnalyzedData-{csvSheet}"]
     
-    def getRowNumber(self, searchString, colNum, csvSheet):
+    def getRowNumber(self, searchString: str, colNum, csvSheet=1, startRow=None):
         self._activateWorksheet(csvSheet)
+        startRow = startRow or self.active_ws.min_row
         iterator = self.active_ws.iter_rows(min_col=colNum, 
                                             max_col=colNum,
+                                            min_row=startRow,
                                             values_only=True)
         
-        for rowNum, rowVal in enumerate(iterator, start=self.active_ws.min_row):
+        for rowNum, rowVal in enumerate(iterator, start=startRow):
             if rowVal[0] == searchString:
                 return rowNum
+    
+    def getColNumber(self, searchString, csvSheet=1):
+        self._activateWorksheet(csvSheet)
+        iterator = self.active_ws.iter_rows(min_row=1, 
+                                            max_row=1,
+                                            values_only=True)
+        
+        for colNum, colVal in enumerate(iterator, start=self.active_ws.min_column):
+            if colVal[0] == searchString:
+                return colNum
 
-    def findAllRows(self, searchString, colNum, csvSheet):   
+    def findAllRows(self, searchString, colNum, csvSheet=1):   
         allRows = []
         self._activateWorksheet(csvSheet)
         iterator = self.active_ws.iter_rows(min_col=colNum, 
@@ -151,7 +163,7 @@ class CommonTest:
         
         return allRows
 
-    def findRowsIntersect(self, searchStringDict, csvSheet):
+    def findRowsIntersect(self, searchStringDict, csvSheet=1):
         intersection = None
         for key, value in searchStringDict.items():
             allRows = set(self.findAllRows(searchString=value, 
@@ -162,7 +174,7 @@ class CommonTest:
 
         return list(intersection)
 
-    def findRowsUnion(self, searchStringDict, csvSheet):
+    def findRowsUnion(self, searchStringDict, csvSheet=1):
         union = set()
         for key, value in searchStringDict.items():
             union |= set(self.findAllRows(searchString=value,
