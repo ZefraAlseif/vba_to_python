@@ -120,17 +120,56 @@ class TestEnd(unittest.TestCase):
         self.cls.endTest(self.file_dir + self.output_file)
         self.assertEqual(Path(self.file_dir + self.output_file).exists(), True)
 
-class TestGetRowNumber(unittest.TestCase):
-    pass
+class TestGetCellInfo(unittest.TestCase):
+    def setUp(self):
+        self.file_dir = str(Path(__file__).resolve().parent)
+        self.csv_files = [
+            "/../csv_data/realistic_data_1.csv",
+            "/../csv_data/realistic_data_2.csv",
+            "/../csv_data/realistic_data_3.csv",
+            "/../csv_data/realistic_data_4.csv",
+            "/../csv_data/realistic_data_5.csv",
+            "/../csv_data/realistic_data_6.csv",
+            "/../csv_data/realistic_data_7.csv",
+            "/../csv_data/realistic_data_8.csv",
+            "/../csv_data/realistic_data_9.csv",
+            "/../csv_data/realistic_data_10.csv"
+        ]
+        self.output_file = "/../results/realistic_data.xlsx"
+        CommonTest = load_class_from_file(file_path="../src/CommonTest.py",
+                                          class_name="CommonTest")
+        self.cls = CommonTest()
 
-class TestFindAllRows(unittest.TestCase):
-    pass
+        self.cls.initializeTest(
+            csv_files=list(map(lambda x: self.file_dir + x, self.csv_files)),
+            output_file=self.file_dir + self.output_file
+        )
 
-class TestFindRowsIntersect(unittest.TestCase):
-    pass
+    def tearDown(self):
+        if Path(self.file_dir + self.output_file).exists():
+            Path(self.file_dir + self.output_file).unlink()
 
-class TestFindRowsUnion(unittest.TestCase):
-    pass
+    def test_getRowNum(self):
+        self.assertEqual(self.cls.getRowNumber("jennifer39@yahoo.com", 3), 503)
+        self.assertEqual(self.cls.getRowNumber("Ruth", 1), 14)
+        self.assertEqual(self.cls.getRowNumber("6477", self.cls.total_cols[4] - 1, 5), 1001)
+        self.assertEqual(self.cls.getRowNumber(6477, self.cls.total_cols[4] - 1, 5), None)
+
+    def test_getColNum(self):
+        self.assertEqual(self.cls.getColumnNumber("CreditCard"), 13)
+        self.assertEqual(self.cls.getColumnNumber("DateOfBirth", 10), 12)
+        self.assertEqual(self.cls.getColumnNumber("Testing", 10), None)
+
+    def test_findAllRows(self):
+        self.assertEqual(len(self.cls.findAllRows("David",1,1)), 16)
+        self.assertEqual(len(self.cls.findAllRows("Missouri",7,10)), 27)
+        self.assertEqual(len(self.cls.findAllRows("Hello World",7,10)), 0)
+
+    def test_findRowsIntersect(self):
+        pass
+
+    def test_findRowsUnion(self):
+        pass
 
 class TestExpectedValuesCheck(unittest.TestCase):
     pass
