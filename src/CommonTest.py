@@ -140,9 +140,9 @@ class CommonTest:
             if rowVal[0] == searchString:
                 return rowNum
     
-    def getColNumber(self, searchString, csvSheet=1):
+    def getColumnNumber(self, searchString, csvSheet=1):
         self._activateWorksheet(csvSheet)
-        iterator = self.active_ws.iter_rows(min_row=1, 
+        iterator = self.active_ws.iter_cols(min_row=1, 
                                             max_row=1,
                                             values_only=True)
         
