@@ -166,10 +166,38 @@ class TestGetCellInfo(unittest.TestCase):
         self.assertEqual(len(self.cls.findAllRows("Hello World",7,10)), 0)
 
     def test_findRowsIntersect(self):
-        pass
+        strDict = {
+            1: "David",
+            7: "Florida"
+        }
+
+        listRows = self.cls.findRowsIntersect(strDict,10)
+        self.assertEqual(len(listRows), 1)
+        self.assertEqual(listRows[0], 29)
+
+        listRows = self.cls.findRowsIntersect(strDict,1)
+        self.assertEqual(len(listRows), 0)
 
     def test_findRowsUnion(self):
-        pass
+        strDict = {
+            1: "David",
+            7: "Florida"
+        }
+
+        rowsName = self.cls.findAllRows(strDict[1], 1, 10)
+        rowsState = self.cls.findAllRows(strDict[7], 7, 10)
+        listRows = self.cls.findRowsUnion(strDict,10)
+        self.assertEqual(len(listRows), len(rowsName) + len(rowsState) - 1)
+
+        rowsName = self.cls.findAllRows(strDict[1], 1, 1)
+        rowsState = self.cls.findAllRows(strDict[7], 7, 1)
+        listRows = self.cls.findRowsUnion(strDict,1)
+        self.assertEqual(len(listRows), len(rowsName) + len(rowsState))
+
+        rowsName = self.cls.findAllRows("dfsjdf", 1, 1)
+        rowsState = self.cls.findAllRows("sdkfmdskf", 7, 1)
+        listRows = self.cls.findRowsUnion({1:"dfsjdf",2:"sdkfmdskf"},1)
+        self.assertEqual(len(listRows), len(rowsName) + len(rowsState))
 
 class TestExpectedValuesCheck(unittest.TestCase):
     pass
