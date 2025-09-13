@@ -36,7 +36,7 @@ class TestInitialize(unittest.TestCase):
             "/../csv_data/realistic_data_10.csv"
         ]
         self.output_file = "/../results/realistic_data.xlsx"
-        CommonTest = load_class_from_file(file_path="../src/CommonTest.py",
+        CommonTest = load_class_from_file(file_path=self.file_dir + "/../src/CommonTest.py",
                                           class_name="CommonTest")
         self.cls = CommonTest()
     
@@ -99,7 +99,7 @@ class TestEnd(unittest.TestCase):
             "/../csv_data/realistic_data_10.csv"
         ]
         self.output_file = "/../results/realistic_data.xlsx"
-        CommonTest = load_class_from_file(file_path="../src/CommonTest.py",
+        CommonTest = load_class_from_file(file_path=self.file_dir + "/../src/CommonTest.py",
                                           class_name="CommonTest")
         self.cls = CommonTest()
     
@@ -136,7 +136,7 @@ class TestGetCellInfo(unittest.TestCase):
             "/../csv_data/realistic_data_10.csv"
         ]
         self.output_file = "/../results/realistic_data.xlsx"
-        CommonTest = load_class_from_file(file_path="../src/CommonTest.py",
+        CommonTest = load_class_from_file(file_path=self.file_dir + "/../src/CommonTest.py",
                                           class_name="CommonTest")
         self.cls = CommonTest()
 
