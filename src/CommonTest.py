@@ -260,6 +260,11 @@ class CommonTest:
         self._activateWorksheet(csvSheet=csvSheet)
         self.active_ws(row=row, column=col, value=value).font = self._redFont
 
+    def getCellValue(self, row: int, col: int, csvSheet: Optional [int] = 1) -> str:
+        self._activateWorksheet(csvSheet=csvSheet)
+        self.active_ws.cell(row=row, column=col).fill = self._orangeFill
+        return self.active_ws.cell(row=row, column=col).value
+
     def _setCellHyperlink(self, dataRow: int, dataCol: int, resultRow: int, 
                           resultCol: int, csvSheet: int) -> None:
         cell = self.results_ws(row=resultRow, column=resultCol)
