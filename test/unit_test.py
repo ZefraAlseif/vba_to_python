@@ -199,6 +199,12 @@ class TestGetCellInfo(unittest.TestCase):
         listRows = self.cls.findRowsUnion({1:"dfsjdf",2:"sdkfmdskf"},1)
         self.assertEqual(len(listRows), len(rowsName) + len(rowsState))
 
+    def test_getCellValue(self):
+        self.assertEqual(self.cls.getCellValue(2,1), "Jessica")
+        self.assertEqual(self.cls.getCellValue(500,1, 10), "Anthony")
+        self.assertEqual(self.cls.getCellValue(5,4), "(170)522-9895")
+        self.assertEqual(self.cls.getCellValue(10000,4, 10), None)
+
 class TestExpectedValuesCheck(unittest.TestCase):
     pass
 
