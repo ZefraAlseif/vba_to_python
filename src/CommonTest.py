@@ -1,6 +1,7 @@
 import openpyxl
 import pandas as pd
 from enum import IntEnum, Enum
+from typing import List, Optional, Dict
 
 class _Column(IntEnum):
     ROW     = 1
@@ -70,7 +71,7 @@ class CommonTest:
         self._orangeFill = _CellFormat.ORANGEFILL
         self._hyperLinkFont = _CellFormat.HYPERLINK   
 
-    def initializeTest(self, csv_files, output_file):
+    def initializeTest(self, csv_files: List, output_file: str) -> None:
         with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
             self.workbook = writer.book
             header_format = self.workbook.add_format({'bold': True})
@@ -97,14 +98,14 @@ class CommonTest:
             self._createResultsFile()
         self._openResultsWorkbook(output_file)
 
-    def endTest(self, output_file):
+    def endTest(self, output_file: str) -> None:
         self.workbook.save(output_file) 
 
-    def _createResultsFile(self):
+    def _createResultsFile(self) -> None:
         self.results_ws = self.workbook.add_worksheet("Results")
         self._formatResultsWorksheet()
 
-    def _formatResultsWorksheet(self):
+    def _formatResultsWorksheet(self) -> None:
         header_format = self.workbook.add_format({
             "bold": True,
             "align": "center",
@@ -120,15 +121,18 @@ class CommonTest:
 
         self.results_ws.freeze_panes(1,0)
 
-    def _openResultsWorkbook(self, output_file):
+    def _openResultsWorkbook(self, output_file: str) -> None:
         self.workbook   = openpyxl.load_workbook(output_file)
         self.active_ws  = self.workbook.active
         self.results_ws = self.workbook['Results']       
 
-    def _activateWorksheet(self, csvSheet):
+    def _activateWorksheet(self, csvSheet: int) -> None:
         self.active_ws = self.workbook[f"AnalyzedData-{csvSheet}"]
     
-    def getRowNumber(self, searchString: str, colNum, csvSheet=1, startRow=None):
+    def getRowNumber(self, searchString: str, colNum: int, 
+                     csvSheet: Optional [int] = 1, 
+                     startRow: Optional [int] = None) -> int:
+        
         self._activateWorksheet(csvSheet)
         startRow = startRow or self.active_ws.min_row
         iterator = self.active_ws.iter_rows(min_col=colNum, 
@@ -140,7 +144,9 @@ class CommonTest:
             if rowVal[0] == searchString:
                 return rowNum
     
-    def getColumnNumber(self, searchString, csvSheet=1):
+    def getColumnNumber(self, searchString: str, 
+                        csvSheet: Optional [int] = 1) -> int:
+        
         self._activateWorksheet(csvSheet)
         iterator = self.active_ws.iter_cols(min_row=1, 
                                             max_row=1,
@@ -150,7 +156,9 @@ class CommonTest:
             if colVal[0] == searchString:
                 return colNum
 
-    def findAllRows(self, searchString, colNum, csvSheet=1):   
+    def findAllRows(self, searchString: str, colNum: int, 
+                    csvSheet: Optional [int] = 1) -> List:
+        
         allRows = []
         self._activateWorksheet(csvSheet)
         iterator = self.active_ws.iter_rows(min_col=colNum, 
@@ -163,7 +171,9 @@ class CommonTest:
         
         return allRows
 
-    def findRowsIntersect(self, searchStringDict, csvSheet=1):
+    def findRowsIntersect(self, searchStringDict: Dict, 
+                          csvSheet: Optional [int] = 1) -> List:
+        
         intersection = None
         for key, value in searchStringDict.items():
             allRows = set(self.findAllRows(searchString=value, 
@@ -174,7 +184,9 @@ class CommonTest:
 
         return list(intersection)
 
-    def findRowsUnion(self, searchStringDict, csvSheet=1):
+    def findRowsUnion(self, searchStringDict: Dict, 
+                      csvSheet: Optional [int] = 1) -> List:
+        
         union = set()
         for key, value in searchStringDict.items():
             union |= set(self.findAllRows(searchString=value,
@@ -183,16 +195,16 @@ class CommonTest:
 
         return list(union)
     
-    def _returnStrCoordRC(self):
+    def _returnStrCoordRC(self) -> str:
         actVal = f'RC[{self._actValCol - self._checkCol}]'
         expVal = f'RC[{self._expValCol - self._checkCol}]'
         return actVal, expVal
     
-    def _basicFormula(self, operator):
+    def _basicFormula(self, operator: str) -> str:
         actVal, expVal = self._returnStrCoordRC()
         return f"=IF({actVal} {operator} {expVal}, {self._passVal}, {self._failVal})"
 
-    def _commandTolerance(self, tol, cmmd):
+    def _commandTolerance(self, tol: float, cmmd: str) -> str:
         actVal, expVal = self._returnStrCoordRC()
         check1 = f"{actVal} <= {expVal} + {tol}"
         check2 = f"{actVal} => {expVal} - {tol}"
@@ -203,7 +215,7 @@ class CommonTest:
 
         return f"=IF({formula}, {self._passVal}, {self._failVal})"
 
-    def expectedValuesCheck(self, expectedValue, actualValue):
+    def expectedValuesCheck(self, expectedValue: str, actualValue: str) -> None:
         expVal = None
         stringSplit = expectedValue.trim().split(",", 1)
         commandStr = stringSplit[0]
@@ -239,32 +251,39 @@ class CommonTest:
                                  resultRow=self.currentResultsRow,
                                  resultCol=self._checkCol)
 
-    def _increaseResultsRow(self):   
+    def _increaseResultsRow(self) -> None:   
         self.currentResultsRow += 1
 
-    def setCellValue(self, row, col, value, csvSheet=1):
+    def setCellValue(self, row: int, col: int, value: str, 
+                     csvSheet: Optional [int] = 1) -> None:
+        
         self._activateWorksheet(csvSheet=csvSheet)
         self.active_ws(row=row, column=col, value=value).font = self._redFont
 
-    def _setCellHyperlink(self, dataRow, dataCol, resultRow, resultCol, csvSheet):
+    def _setCellHyperlink(self, dataRow: int, dataCol: int, resultRow: int, 
+                          resultCol: int, csvSheet: int) -> None:
         cell = self.results_ws(row=resultRow, column=resultCol)
         cell.hyperlink = f"#AnalyzedData-{csvSheet}!R{dataRow}C{dataCol}"
         cell.font = self._hyperLinkFont
     
-    def _setResultCellValue(self, value, resultRow, resultCol):
+    def _setResultCellValue(self, value: str, resultRow: int, resultCol: int) -> None:
         self.results_ws(row=resultRow, column=resultCol, value=value)
 
-    def _setCellComment(self, value, resultRow, resultCol):
+    def _setCellComment(self, value: str, resultRow: int, resultCol: int) -> None:
         self.results_ws(row=resultRow, column=resultCol).comment = value
 
-    def addDataNameResults(self, titleStr, dataRow, dataCol, cmmt, csvSheet):
+    def addDataNameResults(self, titleStr: str, dataRow: int, 
+                           dataCol: Optional [int] = 0, 
+                           cmmt: Optional [str] = None, 
+                           csvSheet: Optional [int] = 1) -> None:
+        
         self._setResultCellValue(value=titleStr,
-                                       resultRow=self.currentResultsRow, 
-                                       resultCol=self._nameCol)
+                                 resultRow=self.currentResultsRow, 
+                                 resultCol=self._nameCol)
         
         self._setResultCellValue(value=dataRow,
-                                       resultRow=self.currentResultsRow, 
-                                       resultCol=self._rowCol)
+                                 resultRow=self.currentResultsRow, 
+                                 resultCol=self._rowCol)
 
         self._setCellHyperlink(dataRow=dataRow, 
                                dataCol=1, 
@@ -274,21 +293,24 @@ class CommonTest:
         
         if dataCol > 0:
             self._setCellHyperlink(dataRow=dataRow, 
-                                    dataCol=dataCol, 
-                                    resultRow=self.currentResultsRow, 
-                                    resultCol=self._actValCol, 
-                                    csvSheet=csvSheet)
+                                   dataCol=dataCol, 
+                                   resultRow=self.currentResultsRow, 
+                                   resultCol=self._actValCol, 
+                                   csvSheet=csvSheet)
         
         if not cmmt is None:
             self._setCellComment(value=openpyxl.comments.Comment(cmmt))
             
-    def writeResults(self, titleStr, dataRow, expectedValue, 
-                     actualValue, dataCol=0, cmmt=None, csvSheet=1):
+    def writeResults(self, titleStr: str, dataRow: int, expectedValue: str, 
+                     actualValue: str, dataCol: Optional[int] = 0, 
+                     cmmt: Optional [str] = None, 
+                     csvSheet: Optional [int] = 1) -> None:
         
         self.addDataNameResults(titleStr=titleStr, 
                                 dataRow=dataRow, 
                                 dataCol=dataCol, 
-                                cmmt=cmmt)
+                                cmmt=cmmt,
+                                csvSheet=csvSheet)
         
         self.expectedValuesCheck(expectedValue=expectedValue,
                                  actualValue=actualValue)
