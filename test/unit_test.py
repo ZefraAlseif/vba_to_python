@@ -1,9 +1,11 @@
 import unittest
 import importlib.util
 import sys
+import time
+import os
 import pandas as pd
 from pathlib import Path
-
+from concurrent.futures import ThreadPoolExecutor
 
 def load_class_from_file(file_path, class_name):
 
@@ -216,6 +218,79 @@ class TestAddDataNameResults(unittest.TestCase):
 
 class TestWriteResults(unittest.TestCase):
     pass
+
+class TestParellelProcess(unittest.TestCase):
+    
+    time_sequential = 0
+    time_parallel = 0
+
+    def setUp(self):
+        self.file_dir = str(Path(__file__).resolve().parent)
+        self.csv_files = [
+            "/../csv_data/realistic_data_1.csv",
+            "/../csv_data/realistic_data_2.csv",
+            "/../csv_data/realistic_data_3.csv",
+            "/../csv_data/realistic_data_4.csv",
+            "/../csv_data/realistic_data_5.csv",
+            "/../csv_data/realistic_data_6.csv",
+            "/../csv_data/realistic_data_7.csv",
+            "/../csv_data/realistic_data_8.csv",
+            "/../csv_data/realistic_data_9.csv",
+            "/../csv_data/realistic_data_10.csv"
+        ]
+
+    def tearDown(self):
+        self.removeFiles()
+    
+    def removeFiles(self):
+        with os.scandir(self.file_dir + "/../results/") as entries:
+            for entry in entries:
+                if entry.is_file() and entry.name.lower().endswith(".xlsx"):
+                    os.remove(entry.path)
+
+    def helperFunc(self, output_file):
+        CommonTest = load_class_from_file(file_path=self.file_dir + "/../src/CommonTest.py",
+                                          class_name="CommonTest")
+        cls = CommonTest()
+        csvTest = list(map(lambda x: self.file_dir + x, self.csv_files))
+        cls.initializeTest(
+            csv_files=csvTest,
+            output_file=self.file_dir + output_file
+        )
+        
+        for index, paths in enumerate(csvTest):
+            df_csv = pd.read_csv(paths, dtype=str)
+            df_xlsx = pd.read_excel(self.file_dir + output_file,
+                                   sheet_name=f"AnalyzedData-{index+1}",
+                                   dtype=str)
+            
+            self.assertEqual(df_csv.equals(df_xlsx), True)
+       
+    def sequentialFunc(self, num_files=3):
+        start_seq = time.time()
+        
+        for i in range(num_files):
+             self.helperFunc(output_file=f"/../results/realistic_data_{i}.xlsx")
+        
+        end_seq = time.time()
+        return end_seq - start_seq
+    
+    def parellelFunc(self, num_files=3):
+        start_mp = time.time()
+        files = [f"/../results/realistic_data_{i}.xlsx" for i in range(num_files)]
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            executor.map(self.helperFunc, files)
+
+        end_mp = time.time()
+        return end_mp - start_mp
+
+    def test_xcompare(self):
+        time_seq = self.sequentialFunc()
+        self.removeFiles()
+        time_thread = self.parellelFunc()
+        self.removeFiles()
+        self.assertLess(time_seq, time_thread)
+
 
 if __name__ == "__main__":
     unittest.main()
