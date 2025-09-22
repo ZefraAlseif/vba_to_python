@@ -6,6 +6,8 @@ import os
 import pandas as pd
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool
+import subprocess
 
 def load_class_from_file(file_path, class_name):
 
@@ -290,7 +292,29 @@ class TestParellelProcess(unittest.TestCase):
         time_thread = self.parellelFunc()
         self.removeFiles()
         self.assertLess(time_seq, time_thread)
+    
+class TestMultipleProcess(unittest.TestCase):
+    
+    def setUp(self):
+        self.file_dir = str(Path(__file__).resolve().parent)
+    
+    def run_script(self, script):
+        return subprocess.run(["python", f"{self.file_dir}/{script}"]).returncode
+    
+    def test_multiProcess(self):
+        scripts = ["script1.py", "script2.py", "script3.py"]
+        start_mp = time.time()
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            executor.map(self.run_script, scripts)
+        end_mp = time.time()
+        
+        start_seq = time.time()
+        for index, script in enumerate(scripts):
+            self.run_script(script)
+        end_seq = time.time()
 
+        self.assertLess(end_mp - start_mp, (end_seq - start_seq) * .65)
+        print(f"{end_mp - start_mp} vs {(end_seq - start_seq) * .65} ")
 
 if __name__ == "__main__":
     unittest.main()
